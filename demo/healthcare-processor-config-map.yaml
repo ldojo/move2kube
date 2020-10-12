@@ -1,0 +1,22 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: healthcare-processor 
+data:
+  application.yaml: |-
+    camel:
+      rest:
+        port: ${PORT:8080}
+        binding-mode: auto
+    #    file-configurations: classpath:camel-file-configuration/*.xml
+    spring:
+      redis:
+        host: redis
+        password: password
+      autoconfigure:
+        exclude:
+          - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+          - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+    health-processor:
+      service-host: ${vcap.services.sample-service.credentials.health-processor.service-host:http://localhost:8080}
+    #  service-scheme: ${vcap.services.sample-service.credentials.health-processor.service-scheme:https}
