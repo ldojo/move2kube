@@ -1,0 +1,57 @@
+##Create project named "move2kube" in Openshift -- will deploy everything there
+
+
+###create postgresql
+oc process -f postgres.yaml | oc create -f -
+#rsh into postgresql pod, "psql sampledb", and run:
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+
+###create redis
+oc get template redis-ephemeral --namespace openshift -o yaml | oc process -p REDIS_PASSWORD=password -f -  | oc create -f -
+
+###create spring configMaps to hold their Spring configuration
+oc create -f sample-service-config-map.yaml
+oc create -f healthcare-processor-config-map.yaml
+
+### give spring cloud SA the right to view, so that spring-cloud-kuberenetes can read the configMaps
+oc policy add-role-to-user view system:serviceaccount:move2kube:default
+
+move2kube translate  -n demo -s ~/dev/camel-sample-cf/
+
+## the services are bad when created with this. The K8s Services will have a duplicate port spec
+## remove the duplicate port spec manually after running this.
+cd demo
+oc create -f demo/
+
+##copy sources -- will complain about manifest.yaml already being in the directory, but that's ok
+./copysources.sh ~/dev/camel-sample-cf/
+
+##build
+#make sure the directory is maven cleaned prior
+cd containers;
+./healthcare-processorcnbbuilder.sh
+./sample-servicecnbbuilder.sh
+
+##test
+
+curl -X POST   http://healthcare-processor-move2kube.apps.ocp.lshulmanrh.com/xml-dsl/bills   -H 'Content-Type: application/json'     -H 'cache-control: no-cache'   -d '{
+  "amount": 32.22,
+  "doctor": {
+    "firstName": "Laurie",
+    "lastName": "Stodit"
+  },
+  "patient": {
+    "firstName": "Rafferty",
+    "lastName": "Downey"
+  }
+}
+'
+
+curl -X POST   http://healthcare-processor-move2kube.apps.ocp.lshulmanrh.com/java-dsl/enrollment/patient   -H 'Content-Type: application/json'   -H 'cache-control: no-cache'   -d '{
+    "firstName": "Bob",
+    "lastName": "Doey",
+    "mailingAddress": "123 Elm Street",
+    "gender": "MALE",
+    "ssn": "222-22-2222"
+}'
