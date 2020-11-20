@@ -30,8 +30,8 @@ oc create -f demo/
 ##build
 #make sure the directory is maven cleaned prior
 cd containers;
-./manifest.yaml/healthcare-processor/target/healthcare-processor-1.0-SNAPSHOT.jar/healthcare-processorcnbbuilder.sh
-./manifest.yaml/sample-service/target/sample-service-1.0-SNAPSHOT.jar/sample-servicecnbbuilder.sh
+./healthcare-processorcnbbuilder.sh
+./sample-servicecnbbuilder.sh
 
 ##test
 
